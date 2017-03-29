@@ -2,8 +2,8 @@
 
 Líf is the token of the Winding Tree platform.
 
-Líf is based on the ERC20 token protocol, with the option to also send information between token holders using edited versions of the transfer and transferFrom methods.
-Lif is also a DAO, the token holders can create proposals to change token variables and send value/data to another contracts.
+Líf is based on the ERC20 token protocol, with the option to also send information between token holders uint new methods transferData and transferDataFrom.
+Líf is also a DAO, the token holders can create proposals to change token variables and send value/data to another contracts.
 
 ## Install
 
@@ -13,67 +13,45 @@ npm install truffle -g
 npm install
 ```
 
-## Contract lifecycle
+## Contract Lífecycle
 
-By lifecycle we mean how the status changes, under what conditions, who can do it and what you can do each status.
+By Lífecycle we mean how the status changes, under what conditions, who can do it and what you can do each status.
 
 1.- First the contract is deployed on status 0, where teh deployer specify the base proposal fee, max supply, proposal blocks wait, exponential increment of votes rewards and minimun votes needed to create a proposal.
   ```
-  // LifToken constructor
-  function LifToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait, uint _votesIncrementSent, uint _votesIncrementReceived, uint _minProposalVotes) {
+  // LífToken constructor
+  function LífToken(uint _baseProposalFee, uint _maxSupply, uint _proposalBlocksWait, uint _votesIncrementSent, uint _votesIncrementReceived, uint _minProposalVotes) {
       ...
   }
   ```
-2.- This funciton can be called only by the owner of the contract. Here the owner need to specify the starting price and the tokens can start to be sold.
+2.- Creation of the token crowdsale stages
   ```
-  function startCrowdSale(uint _tokenPrice) { ... }
+  function addCrowdsaleStage(uint startBlock, uint endBlock, uint tokenPrice, uint minCap, uint totalTokens)
   ```
-3.- Once the crowdsale ends the owner of the contract can start the DAO, here the organization will take control of the contract.
+3.- Configuration of the DAO actions, this is how much votes will be needed to call a contract function from the token.
   ```
-  function startDAO() { ... }
+  function buildMinVotes(address target, uint votesPercentage, bytes4 signature)
   ```
 
-## Token Methods
+## New Token Methods
 
-### transfer
+Líf token is ERC20 compatible but it also has two more methods to allow the transference of data between users/contracts.
+
+### transferData
 
 Transfer tokens from one address to another.
 ```
-transfer(address _to, uint _value, string _data) => (bool success)
+transferData(address _to, uint _value, string _data) => (bool success)
 ```
 Returns: bool, Success of the operation.
 
-### transferFrom
+### transferDataFrom
 
 Transfer  an allowed amount of tokens from one address to another.
 ```
-transferFrom(address _from, address _to, uint _value, string _data) => (bool success)
+transferDataFrom(address _from, address _to, uint _value, string _data) => (bool success)
 ```
 Returns: bool, Success of the operation.
-
-### balanceOf
-
-Get the balance of the address.
-```
-balanceOf(address _owner) => (uint balance)
-```
-Returns: uint, balance of the address.
-
-### approve
-
-Allow an address to spent a certain amount of tokens.
-```
-approve(address _spender, uint _value) => (bool success)
-```
-Returns: bool, Success of the operation.
-
-### allowance
-
-Get the amounts of tokens allowed to be transfered between addresses.
-```
-allowance(address _owner, address _spender) => (uint remaining)
-```
-Returns: uint, balance of tokens allowed to be transfered.
 
 ## DAO Methods
 
