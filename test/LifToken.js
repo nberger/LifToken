@@ -7,7 +7,7 @@ var Message = artifacts.require("./Message.sol");
 String.prototype.hexEncode = function(){
     var hex, i;
     var result = "";
-    for (i=0; i<this.length; i++) {
+    for (i=0; i < this.length; i++) {
       hex = this.charCodeAt(i).toString(16);
       result += ("000"+hex).slice(-4);
     }
@@ -25,8 +25,8 @@ String.prototype.hexDecode = function(){
 };
 
 const TOKEN_DECIMALS = 8;
-const DEBUG_MODE = false;
-const LOG_EVENTS = false;
+const DEBUG_MODE = true;
+const LOG_EVENTS = true;
 
 function parseBalance(balance){
   return (balance/Math.pow(10,TOKEN_DECIMALS)).toPrecision(TOKEN_DECIMALS);
@@ -93,7 +93,7 @@ contract('LifToken', function(accounts) {
         } else {
           web3.eth.sendTransaction({from: accounts[0], to: accounts[1], value: 1});
         }
-      }, 100 );
+      }, 10 );
     });
   }
 
@@ -130,7 +130,7 @@ contract('LifToken', function(accounts) {
 
         if (DEBUG_MODE) {
           console.log('Contract Balance:', toEther(values[0]), 'Ether;', toWei(values[0]), 'Wei');
-          console.log('Total Supply:', parseBalance(values[1]));
+          console.log('Total Supply:', parseInt(values[1]));
           console.log('Token Price:', parseInt(values[2]));
           console.log('Dao Total Votes:', parseInt(values[3]), 'Dao Votes Increment Exponent sent/received:', parseInt(values[4]),'/',parseInt(values[5]));
           console.log('Account[1]', accounts[1], ", Balance:", parseBalance(values[6]), ", Votes:", parseInt(values[11]), ", txsSent / txsReceived:", parseInt(values[16]), parseInt(values[21]));
@@ -143,7 +143,7 @@ contract('LifToken', function(accounts) {
         if (etherBalance)
           assert.equal(toEther(values[0]), etherBalance);
         if (totalSupply)
-          assert.equal(parseBalance(values[1]), totalSupply);
+          assert.equal(parseInt(values[1]), totalSupply);
         if (tokenPrice)
           assert.equal(toWei(values[2]), tokenPrice);
         if (balances){
@@ -181,56 +181,6 @@ contract('LifToken', function(accounts) {
     });
   }
 
-  function getActions() {
-    return new Promise(function(resolve, reject) {
-
-      token.DAOActionsLength().then(actionsLenght => {
-
-        var actionPromises = [];
-
-        for (var z = 1; z < actionsLenght; z++)
-          actionPromises.push( token.DAOActions.call(z) );
-
-        Promise.all(actionPromises).then(actions => {
-
-          if (DEBUG_MODE){
-            console.log('Total Actions:', parseInt(actionsLenght)-1);
-            for (var z = 0; z < actions.length; z++)
-              console.log('Signature:', actions[z][2], '; Address:', actions[z][0], '; % Votes:', parseInt(actions[z][1]));
-          }
-          resolve(actions);
-        }).catch(err => {
-          reject(err);
-        });
-      });
-
-    });
-  }
-
-  function getProposals() {
-    return new Promise(function(resolve, reject) {
-
-      token.ProposalsLenght().then(proposalsLenght => {
-        var actionPromises = [];
-
-        for (var z = 1; z < proposalsLenght; z++)
-          actionPromises.push( token.proposals.call(z) );
-
-        Promise.all(actionPromises).then(proposals => {
-          if (DEBUG_MODE){
-            console.log('Total Proposals:', parseInt(proposalsLenght)-1);
-            for (var z = 0; z < proposals.length; z++)
-              console.log('['+parseInt(proposals[z][1])+'] To: '+proposals[z][0]+', Value: '+toEther(proposals[z][2])+', Desc: '+proposals[z][3]+', Status: '+parseInt(proposals[z][4])+', Votes Needed: '+parseInt(proposals[z][8]));
-          }
-          resolve(proposals);
-        }).catch(err => {
-          reject(err);
-        });
-      });
-
-    });
-  }
-
   function getProposal(id) {
     return new Promise(function(resolve, reject) {
 
@@ -261,8 +211,8 @@ contract('LifToken', function(accounts) {
 
   function getStage(number) {
     return new Promise(function(resolve, reject) {
-      token.getCrowdsaleStage.call(number).then(stageData => {
-        console.log('[Stage '+number+'] Blocks: '+parseInt(stageData[0])+' - '+parseInt(stageData[1]) +', Price: '+toEther(stageData[2])+', MinCap: '+toEther(stageData[3])+' ETH, Total Tokens: '+parseInt(stageData[4])+', Status: '+parseInt(stageData[5]), ', Raised: ',toEther(stageData[6]), 'ETH, Tokens Sold: ',parseInt(stageData[7]));
+      token.crowdsaleStages.call(number).then(stageData => {
+        console.log('[Stage '+number+'] Blocks: '+parseInt(stageData[0])+' - '+parseInt(stageData[1]) +', Start Price: '+toEther(stageData[2])+', ChangePerBlock: '+parseInt(stageData[3])+'/'+toEther(stageData[4])+' ETH, MinCap: '+toEther(stageData[5]),', Total Tokens: '+parseInt(stageData[6]), ', Presale Discount: ',parseInt(stageData[7]), ', Presale ETH Raised: ',toEther(stageData[8]), ', Crowdsale Raised: ',toEther(stageData[9]), 'ETH, Tokens Sold: ',parseInt(stageData[10]), ', Final Price: ',toEther(stageData[11]), 'ETH, Status: ',parseInt(stageData[12]));
         resolve(stageData);
       }).catch(err => {
         reject(err);
@@ -273,29 +223,62 @@ contract('LifToken', function(accounts) {
   function simulateCrowdsale(_token, total, price, balances){
     var startBlock = web3.eth.blockNumber;
     var endBlock = web3.eth.blockNumber+5;
-    return _token.addCrowdsaleStage(startBlock, endBlock, price, price*total, total)
+    return _token.addCrowdsaleStage(startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), total*price, total, 40)
       .then(function(){
         if (balances[0] > 0)
-          return _token.createTokens(accounts[1], balances[0], { value: balances[0]*price, from: accounts[1] });
+          return _token.submitBid(accounts[1], balances[0], { value: balances[0]*price, from: accounts[1] });
       })
       .then(function(){
         if (balances[1] > 0)
-          return _token.createTokens(accounts[2], balances[1], { value: balances[1]*price, from: accounts[2] });
+          return _token.submitBid(accounts[2], balances[1], { value: balances[1]*price, from: accounts[2] });
       })
       .then(function(){
         if (balances[2] > 0)
-          return _token.createTokens(accounts[3], balances[2], { value: balances[2]*price, from: accounts[3] });
+          return _token.submitBid(accounts[3], balances[2], { value: balances[2]*price, from: accounts[3] });
       })
       .then(function(){
         if (balances[3] > 0)
-          return _token.createTokens(accounts[4], balances[3], { value: balances[3]*price, from: accounts[4] });
+          return _token.submitBid(accounts[4], balances[3], { value: balances[3]*price, from: accounts[4] });
       })
       .then(function(){
         if (balances[4] > 0)
-          return _token.createTokens(accounts[5], balances[4], { value: balances[4]*price, from: accounts[5] });
+          return _token.submitBid(accounts[5], balances[4], { value: balances[4]*price, from: accounts[5] });
       })
       .then(function(){
         return waitToBlock(endBlock);
+      })
+      .then(function() {
+        return _token.checkCrowdsaleStage(0);
+      })
+      .then(function() {
+        return Promise.all([
+          _token.crowdsaleStages.call(0),
+          _token.status()
+        ]);
+      })
+      .then(function([auctionEnded, tokenStatus]) {
+        assert.equal(parseInt(tokenStatus), 4);
+        assert.equal(parseFloat(auctionEnded[12]), 3);
+      })
+      .then(function(){
+        if (balances[0] > 0)
+          return _token.claimTokens(0, { from: accounts[1] });
+      })
+      .then(function(){
+        if (balances[1] > 0)
+          return _token.claimTokens(0, { from: accounts[2] });
+      })
+      .then(function(){
+        if (balances[2] > 0)
+          return _token.claimTokens(0, { from: accounts[3] });
+      })
+      .then(function(){
+        if (balances[3] > 0)
+          return _token.claimTokens(0, { from: accounts[4] });
+      })
+      .then(function(){
+        if (balances[4] > 0)
+          return _token.claimTokens(0, { from: accounts[5] });
       });
   }
 
@@ -303,143 +286,227 @@ contract('LifToken', function(accounts) {
   //                    Lif Token Tests                 //
   ////////////////////////////////////////////////////////
 
-  it("should simulate a crowdsale", function(done) {
+  it("Should simulate a crwodsale of 7m tokens with on ducth auction stage, using future discount and distribute 3M of the tokens using futurePayments", function(done) {
     var currentBlock = web3.eth.blockNumber;
-    var firstStageStartBlock, secondStageStartBlock, thirdStageStartBlock;
-    // Configure all the corwdsale stages
+    var startBlock = currentBlock+10;
+    var endBlock = currentBlock+110;
+    var totalWeiSent = 0;
+    var totalTokensBought = 0;
+    var lastPrice = 0;
+    var presaleTokens = 0;
+    // Add crowdsale stage to sell 7M tokens using dutch auction and the future payments.
     Promise.all([
-      token.addCrowdsaleStage(currentBlock+10, currentBlock+20, web3.toWei(0.9, 'ether'), web3.toWei(1260000, 'ether'), 1400000),
-      token.addCrowdsaleStage(currentBlock+30, currentBlock+40, web3.toWei(1.44, 'ether'), web3.toWei(5040000, 'ether'), 3500000),
-      token.addCrowdsaleStage(currentBlock+50, currentBlock+60, web3.toWei(1.8, 'ether'), web3.toWei(3780000, 'ether'), 2100000),
+      token.addCrowdsaleStage(startBlock, endBlock, web3.toWei(5, 'ether'), 10, web3.toWei(0.4, 'ether'), web3.toWei(10000000, 'ether'), 7000000, 40),
+      token.addFuturePayment(accounts[0], endBlock, 625000, web3.toHex("Founding Team first year retribution tokens")),
+      token.addFuturePayment(accounts[0], endBlock+10, 625000, web3.toHex("Founding Team second year retribution tokens")),
+      token.addFuturePayment(accounts[0], endBlock+20, 625000, web3.toHex("Founding Team third year retribution tokens")),
+      token.addFuturePayment(accounts[0], endBlock+30, 625000, web3.toHex("Founding Team four year retribution tokens")),
+      token.addFuturePayment(accounts[0], endBlock, 500000, web3.toHex("Tokens for future WT employees"))
     ])
     .then(function() {
+      return token.addDiscount(accounts[10], 0, web3.toWei(250000, 'ether'));
+    })
+    .then(function() {
       return Promise.all([
-        token.getCrowdsaleStage(0),
-        token.getCrowdsaleStage(1),
-        token.getCrowdsaleStage(2),
-        token.maxSupply()
+        getStage(0),
+        token.maxSupply(),
+        token.futurePayments.call(0),
+        token.futurePayments.call(1),
+        token.futurePayments.call(2),
+        token.futurePayments.call(3),
+        token.futurePayments.call(4)
       ]);
     })
-    .then(function([firstStage, secondStage, thirdStage, maxSupply]) {
-      firstStageStartBlock = parseInt(firstStage[0]);
-      secondStageStartBlock = parseInt(secondStage[0]);
-      thirdStageStartBlock = parseInt(thirdStage[0]);
-      console.log('Max Supply:', parseInt(maxSupply));
-      assert.equal(parseFloat(firstStage[2]), web3.toWei(0.9, 'ether'));
-      assert.equal(parseFloat(firstStage[3]), web3.toWei(1260000, 'ether'));
-      assert.equal(parseFloat(firstStage[4]), 1400000);
-      assert.equal(parseFloat(secondStage[2]), web3.toWei(1.44, 'ether'));
-      assert.equal(parseFloat(secondStage[3]), web3.toWei(5040000, 'ether'));
-      assert.equal(parseFloat(secondStage[4]), 3500000);
-      assert.equal(parseFloat(thirdStage[2]), web3.toWei(1.8, 'ether'));
-      assert.equal(parseFloat(thirdStage[3]), web3.toWei(3780000, 'ether'));
-      assert.equal(parseFloat(thirdStage[4]), 2100000);
-      assert.equal(parseFloat(maxSupply), 7000000);
+    // Check that the crowdsale stage and payments created succesfully with the right values
+    .then(function([dutchAuction, maxSupply, FTPaymentFirstYear, FTPaymentSecondYear, FTPaymentThirdYear, FTPaymentFourthPayment, futureMembersPayment]) {
+      assert.equal(FTPaymentFirstYear[0], accounts[0]);
+      assert.equal(parseFloat(FTPaymentFirstYear[1]), endBlock);
+      assert.equal(parseFloat(FTPaymentFirstYear[2]), 625000);
+      assert.equal(FTPaymentSecondYear[0], accounts[0]);
+      assert.equal(parseFloat(FTPaymentSecondYear[1]), endBlock+10);
+      assert.equal(parseFloat(FTPaymentSecondYear[2]), 625000);
+      assert.equal(FTPaymentThirdYear[0], accounts[0]);
+      assert.equal(parseFloat(FTPaymentThirdYear[1]), endBlock+20);
+      assert.equal(parseFloat(FTPaymentThirdYear[2]), 625000);
+      assert.equal(FTPaymentFourthPayment[0], accounts[0]);
+      assert.equal(parseFloat(FTPaymentFourthPayment[1]), endBlock+30);
+      assert.equal(parseFloat(FTPaymentFourthPayment[2]), 625000);
+      assert.equal(futureMembersPayment[0], accounts[0]);
+      assert.equal(parseFloat(futureMembersPayment[1]), endBlock);
+      assert.equal(parseFloat(futureMembersPayment[2]), 500000);
+      assert.equal(parseFloat(dutchAuction[2]), web3.toWei(5, 'ether'));
+      assert.equal(parseFloat(dutchAuction[3]), 10);
+      assert.equal(parseFloat(dutchAuction[4]), web3.toWei(0.4, 'ether'));
+      assert.equal(parseFloat(dutchAuction[5]), web3.toWei(10000000, 'ether'));
+      assert.equal(parseFloat(maxSupply), 10000000);
     })
-    // Shouldnt be able to buy since first stage didnt started, the ethers will be returned
+    // Shouldnt be able to submit the bid since first stage didnt started, the ethers will be returned
     .then(function() {
-      return token.createTokens(accounts[1], 10, { value: web3.toWei(1, 'ether'), from: accounts[1] });
+      return token.submitBid(accounts[1], 10, { value: web3.toWei(1, 'ether'), from: accounts[1] });
+    })
+    .catch(function(error) {
+      if (error.message.search('invalid JUMP') == -1) throw error;
+    })
+    // Wait for the crodsale to start and bid for for the total of the tokens from differents accounts using different prices.
+    .then(function() {
+      return waitToBlock(startBlock);
+    })
+    .then(function() {
+      return token.getPrice(500000);
+    })
+    .then(function(price) {
+      lastPrice = parseFloat(price)/500000;
+      assert.equal(price, web3.toWei(5, 'ether')*500000);
+      totalWeiSent += parseFloat(price);
+      totalTokensBought += 500000;
+      return token.submitBid(accounts[1], 500000, { value: web3.toWei(5, 'ether')*500000, from: accounts[1] });
+    })
+    .then(function() {
+      return chekValues(toEther(500000*web3.toWei(5, 'ether')), 0, web3.toWei(5, 'ether'), [0, 0, 0, 0, 0]);
+    })
+    .then(function() {
+      return waitToBlock(startBlock+10);
+    })
+    .then(function() {
+      return token.getPrice(1);
+    })
+    .then(function(price) {
+      lastPrice = parseFloat(price);
+      totalWeiSent += parseFloat(price)*1000000;
+      totalWeiSent += parseFloat(price)*500000;
+      totalTokensBought += 1000000;
+      totalTokensBought += 500000;
+      return Promise.all([
+        token.submitBid(accounts[2], 1000000, { value: price*1000000, from: accounts[2] }),
+        token.submitBid(accounts[3], 500000, { value: price*500000, from: accounts[3] })
+      ]);
+    })
+    .then(function() {
+      return waitToBlock(startBlock+20);
+    })
+    .then(function() {
+      return token.getPrice(1);
+    })
+    .then(function(price) {
+      lastPrice = parseFloat(price);
+      totalWeiSent += parseFloat(price)*1000000;
+      totalWeiSent += parseFloat(price)*2000000;
+      totalTokensBought += 1000000;
+      totalTokensBought += 2000000;
+      return Promise.all([
+        token.submitBid(accounts[4], 1000000, { value: price*1000000, from: accounts[4] }),
+        token.submitBid(accounts[5], 2000000, { value: price*2000000, from: accounts[5] })
+      ]);
+    })
+    .then(function() {
+      return waitToBlock(startBlock+40);
+    })
+    .then(function() {
+      return token.getPrice(1);
+    })
+    .then(function(price) {
+      lastPrice = parseFloat(price);
+      totalWeiSent += parseFloat(price)*750000;
+      totalWeiSent += parseFloat(price)*1000000;
+      totalWeiSent += parseFloat(price)*127451;
+      totalTokensBought += 750000;
+      totalTokensBought += 1000000;
+      totalTokensBought += 127451;
+      return Promise.all([
+        token.submitBid(accounts[6], 750000, { value: price*750000, from: accounts[6] }),
+        token.submitBid(accounts[7], 1000000, { value: price*1000000, from: accounts[7] }),
+        token.submitBid(accounts[8], 127451, { value: price*127451, from: accounts[8] })
+      ]);
+    })
+    .then(function() {
+      return getStage(0);
+    })
+    // Check that the crowdsale stage is ready to be completed and reached the completion
+    .then(function(auctionSuccess) {
+      assert.equal(parseFloat(auctionSuccess[2]), web3.toWei(5, 'ether'));
+      assert.equal(parseFloat(auctionSuccess[3]), 10);
+      assert.equal(parseFloat(auctionSuccess[4]), web3.toWei(0.4, 'ether'));
+      assert.equal(parseFloat(auctionSuccess[5]), web3.toWei(10000000, 'ether'));
+      assert.equal(parseFloat(auctionSuccess[6]), 7000000);
+      assert.equal(parseFloat(auctionSuccess[7]), 40);
+      assert.equal(toEther(auctionSuccess[8]), 250000);
+      assert.equal(parseBalance(auctionSuccess[9]), parseBalance(totalWeiSent));
+      assert.equal(parseFloat(auctionSuccess[10]), totalTokensBought);
+      assert.equal(parseFloat(auctionSuccess[11]), lastPrice);
+      assert.equal(parseFloat(auctionSuccess[12]), 2);
+      presaleTokens = toWei(250000)/(lastPrice*0.6);
+      return token.status();
+    })
+    .then(function(status) {
+      assert.equal(parseFloat(status), 3);
+      return waitToBlock(endBlock);
+    })
+    .then(function() {
+      return token.checkCrowdsaleStage(0);
+    })
+    .then(function() {
+      return Promise.all([
+        getStage(0),
+        token.status()
+      ]);
+    })
+    // Check the values of the ended crowdsale stage, token status, and claim the tokens
+    .then(function([auctionEnded, tokenStatus]) {
+      assert.equal(parseInt(tokenStatus), 4);
+      assert.equal(parseFloat(auctionEnded[2]), web3.toWei(5, 'ether'));
+      assert.equal(parseFloat(auctionEnded[3]), 10);
+      assert.equal(parseFloat(auctionEnded[4]), web3.toWei(0.4, 'ether'));
+      assert.equal(parseFloat(auctionEnded[5]), web3.toWei(10000000, 'ether'));
+      assert.equal(parseFloat(auctionEnded[6]), 7000000);
+      assert.equal(parseFloat(auctionEnded[7]), 40);
+      assert.equal(toEther(auctionEnded[8]), 250000);
+      assert.equal(parseBalance(auctionEnded[9]), parseBalance(totalWeiSent));
+      assert.equal(parseFloat(auctionEnded[10]), totalTokensBought);
+      assert.equal(parseFloat(auctionEnded[11]), lastPrice);
+      assert.equal(parseFloat(auctionEnded[12]), 3);
+      return Promise.all([
+        token.claimTokens(0, {from: accounts[1]}),
+        token.claimTokens(0, {from: accounts[2]}),
+        token.claimTokens(0, {from: accounts[3]}),
+        token.claimTokens(0, {from: accounts[4]}),
+        token.claimTokens(0, {from: accounts[5]}),
+        token.claimTokens(0, {from: accounts[6]}),
+        token.claimTokens(0, {from: accounts[7]}),
+        token.claimTokens(0, {from: accounts[8]}),
+        token.claimTokensDiscount(0, {from: accounts[10]})
+      ]);
+    })
+    .then(function() {
+      return chekValues(0, 7000000, 0, [500000, 1000000, 500000, 1000000, 2000000]);
+    })
+    .then(function() {
+      return waitToBlock(endBlock+1);
+    })
+    // Shouldnt allow to a claim a payment before the requested block
+    .then(function() {
+      return token.claimTokensPayment(3, {from: accounts[0]});
     })
     .catch(function(error) {
       if (error.message.search('invalid JUMP') == -1) throw error;
     })
     .then(function() {
-      return waitToBlock(firstStageStartBlock+1);
+      return waitToBlock(endBlock+31);
     })
-    // Should buy the first stage tokens
+    // Should be able to claim all the payments
     .then(function() {
-      // It will send the right price but +100 etehrs, that 100 ethers will be returned.
-      return token.createTokens(accounts[1], 700000, { value: web3.toWei(630100, 'ether'), from: accounts[1] });
+      return Promise.all([
+        token.claimTokensPayment(0, {from: accounts[0]}),
+        token.claimTokensPayment(1, {from: accounts[0]}),
+        token.claimTokensPayment(2, {from: accounts[0]}),
+        token.claimTokensPayment(3, {from: accounts[0]}),
+        token.claimTokensPayment(4, {from: accounts[0]})
+      ]);
     })
+    // Check all final values
     .then(function() {
-      return chekValues(630000, 700000, web3.toWei(0.9, 'ether'), [700000, 0, 0, 0, 0]);
-    })
-    .then(function() {
-      return token.createTokens(accounts[2], 300000, { value: web3.toWei(270000, 'ether'), from: accounts[2] });
-    })
-    .then(function() {
-      return token.createTokens(accounts[3], 250000, { value: web3.toWei(225000, 'ether'), from: accounts[3] });
-    })
-    .then(function() {
-      return token.createTokens(accounts[4], 150000, { value: web3.toWei(135000, 'ether'), from: accounts[4] });
-    })
-    // Check values and wait for the second stage to start.
-    .then(function() {
-      return getStage(0);
-    })
-    .then(function(firstStage) {
-      assert.equal(parseInt(firstStage[5]), 3);
-      assert.equal(parseFloat(firstStage[6]), web3.toWei(1260000, 'ether'));
-      assert.equal(parseFloat(firstStage[7]), 1400000);
-      return waitToBlock(secondStageStartBlock+1);
-    })
-    // Should buy the second stage tokens
-    .then(function() {
-      return token.createTokens(accounts[1], 2000000, { value: web3.toWei(2880000, 'ether'), from: accounts[1] });
+      return chekValues(0, 10000000, 0, [500000, 1000000, 500000, 1000000, 2000000]);
     })
     .then(function() {
-      return token.createTokens(accounts[2], 1000000, { value: web3.toWei(1440000, 'ether'), from: accounts[2] });
-    })
-    .then(function() {
-      return token.createTokens(accounts[3], 100000, { value: web3.toWei(144000, 'ether'), from: accounts[3] });
-    })
-    .then(function() {
-      //Check values while the stage is running
-      return chekValues(5724000, 4500000, web3.toWei(1.44, 'ether'), [2700000, 1300000, 350000, 150000, 0]);
-    })
-    .then(function() {
-      return token.createTokens(accounts[4], 400000, { value: web3.toWei(576000, 'ether'), from: accounts[4] });
-    })
-    // Check values and wait for the third stage to start.
-    .then(function() {
-      return getStage(1);
-    })
-    .then(function(secondStage) {
-      assert.equal(parseInt(secondStage[5]), 3);
-      assert.equal(parseFloat(secondStage[6]), web3.toWei(5040000, 'ether'));
-      assert.equal(parseFloat(secondStage[7]), 3500000);
-      return waitToBlock(thirdStageStartBlock+1);
-    })
-    // Should buy the first stage tokens
-    .then(function() {
-      return token.createTokens(accounts[1], 1000000, { value: web3.toWei(1800000, 'ether'), from: accounts[1] });
-    })
-    .then(function() {
-      return token.createTokens(accounts[2], 300000, { value: web3.toWei(540000, 'ether'), from: accounts[2] });
-    })
-    .then(function() {
-      //Check values while the stage is running
-      return chekValues(8640000, 6200000, web3.toWei(1.8, 'ether'), [3700000, 1600000, 350000, 550000, 0]);
-    })
-    .then(function() {
-      return token.createTokens(accounts[3], 400000, { value: web3.toWei(720000, 'ether'), from: accounts[3] });
-    })
-    .then(function() {
-      return token.createTokens(accounts[4], 300000, { value: web3.toWei(540000, 'ether'), from: accounts[4] });
-    })
-    .then(function() {
-      return getStage(2);
-    })
-    .then(function(thirdStage) {
-      assert.equal(parseInt(thirdStage[5]), 1);
-      assert.equal(parseFloat(thirdStage[6]), web3.toWei(3600000, 'ether'));
-      assert.equal(parseFloat(thirdStage[7]), 2000000);
-      // Complete third stage.
-      return token.createTokens(accounts[1], 100000, { value: web3.toWei(180000, 'ether'), from: accounts[1] });
-    })
-    .then(function() {
-      // Try to buy more than the limit and fail, it wont throw any error, it will only return the ethers
-      return token.createTokens(accounts[4], 300000, { value: web3.toWei(540000, 'ether'), from: accounts[4] });
-    })
-    .then(function() {
-      return getStage(2);
-    })
-    .then(function(thirdStage) {
-      assert.equal(parseInt(thirdStage[5]), 3);
-      assert.equal(parseFloat(thirdStage[6]), web3.toWei(3780000, 'ether'));
-      assert.equal(parseFloat(thirdStage[7]), 2100000);
-      return chekValues(10080000, 7000000, 0, [3800000, 1600000, 750000, 850000, 0]);
-    }).then(function() {
       done();
     });
   });
@@ -447,7 +514,7 @@ contract('LifToken', function(accounts) {
   it("should simulate a crowdsale correctly", function(done) {
     simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0])
       .then(function() {
-        return chekValues(1000000, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0]);
+        return chekValues(1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
       }).then(function(){
         done();
       });
@@ -463,7 +530,7 @@ contract('LifToken', function(accounts) {
       })
       .then(function(allowance) {
         assert.equal(parseBalance(allowance), 10);
-        return chekValues(1000000, 10000000,0, [4000000,3000000,2000000,1000000,0]);
+        return chekValues(1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
       }).then(function(){
         done();
       });
@@ -591,19 +658,9 @@ contract('LifToken', function(accounts) {
         return token.buildMinVotes(token.contract.address, 88, signature, {from: accounts[0]});
       })
       .then(function() {
-        signature = token.contract.removeDAOAction.getData(0x0, 0x0).toString('hex').substring(0,10);
-        console.log('Action removeDAOAction(address,bytes4) signature', signature, {from: accounts[0]});
-        return token.buildMinVotes(token.contract.address, 89, signature);
-      })
-      .then(function() {
-        signature = token.contract.changeDaoAction.getData(0x0, 0x0, 0x0).toString('hex').substring(0,10);
-        console.log('Action changeDaoAction(address,uint,bytes4) signature', signature, {from: accounts[0]});
-        return token.buildMinVotes(token.contract.address, 90, signature);
-      })
-      .then(function() {
         signature = token.contract.sendEther.getData(0x0, 0x0).toString('hex').substring(0,10);
         console.log('Action sendEther(address,uint) signature', signature);
-        return token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]});
+        return token.buildMinVotes(token.contract.address, 89, signature, {from: accounts[0]});
       })
       .then(function() {
         signature = token.contract.setStatus.getData(0x0).toString('hex').substring(0,10);
@@ -611,10 +668,20 @@ contract('LifToken', function(accounts) {
         return token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]});
       })
       .then(function() {
-        return getActions();
+        return Promise.all([
+          token.getActionDAO(token.contract.address, token.contract.setBaseProposalFee.getData(0x0).toString('hex').substring(0,10)),
+          token.getActionDAO(token.contract.address, token.contract.setProposalBlocksWait.getData(0x0).toString('hex').substring(0,10)),
+          token.getActionDAO(token.contract.address, token.contract.addDAOAction.getData(0x0).toString('hex').substring(0,10)),
+          token.getActionDAO(token.contract.address, token.contract.sendEther.getData(0x0).toString('hex').substring(0,10)),
+          token.getActionDAO(token.contract.address, token.contract.setStatus.getData(0x0).toString('hex').substring(0,10))
+        ]);
       })
       .then(function(actions){
-        assert.equal(actions.length, 7);
+        assert.equal(actions[0], 86);
+        assert.equal(actions[1], 87);
+        assert.equal(actions[2], 88);
+        assert.equal(actions[3], 89);
+        assert.equal(actions[4], 90);
         done();
       });
   });
