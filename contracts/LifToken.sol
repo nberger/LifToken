@@ -409,94 +409,94 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     // Send Ether with a DAO proposal approval
-    function sendEther(address _to, uint _amount) fromDAO() onStatus(4,0) returns (bool) {
-      safeSend(_to, _amount);
+    function sendEther(address to, uint amount) fromDAO() onStatus(4,0) returns (bool) {
+      safeSend(to, amount);
       return true;
     }
 
     // Set new status on the contract
-    function setStatus(uint _newStatus) fromDAO() {
+    function setStatus(uint newStatus) fromDAO() {
       if ((msg.sender == address(this)) || (msg.sender == owner))
-        status = _newStatus;
+        status = newStatus;
     }
 
     //ERC20 token transfer method
-    function transfer(address _to, uint _value) returns (bool success) {
+    function transfer(address to, uint value) returns (bool success) {
 
-      balances[msg.sender] = safeSub(balances[msg.sender], _value);
-      balances[_to] = safeAdd(balances[_to], _value);
-      giveVotes(msg.sender, _to);
-      Transfer(msg.sender, _to, _value);
+      balances[msg.sender] = safeSub(balances[msg.sender], value);
+      balances[to] = safeAdd(balances[to], value);
+      giveVotes(msg.sender, to);
+      Transfer(msg.sender, to, value);
 
       return true;
 
     }
 
     //ERC20 token transfer method
-    function transferFrom(address _from, address _to, uint _value) returns (bool success) {
+    function transferFrom(address from, address to, uint value) returns (bool success) {
 
-      uint _allowance = allowed[_from][msg.sender];
-      balances[_to] = safeAdd(balances[_to], _value);
-      balances[_from] = safeSub(balances[_from], _value);
-      allowed[_from][msg.sender] = safeSub(_allowance, _value);
-      giveVotes(msg.sender, _to);
-      Transfer(_from, _to, _value);
+      uint allowance = allowed[from][msg.sender];
+      balances[to] = safeAdd(balances[to], value);
+      balances[from] = safeSub(balances[from], value);
+      allowed[from][msg.sender] = safeSub(allowance, value);
+      giveVotes(msg.sender, to);
+      Transfer(from, to, value);
 
       return true;
 
     }
 
     //ERC20 token approve method
-    function approve(address _spender, uint _value) returns (bool success) {
+    function approve(address spender, uint value) returns (bool success) {
 
-      allowed[msg.sender][_spender] = _value;
-      Approval(msg.sender, _spender, _value);
+      allowed[msg.sender][spender] = value;
+      Approval(msg.sender, spender, value);
 
       return true;
 
     }
 
     // ERC20 transfer method but with data parameter.
-    function transferData(address _to, uint _value, string _data) onlyTokenHolder() onStatus(3,4) returns (bool success) {
+    function transferData(address to, uint value, string data) onlyTokenHolder() onStatus(3,4) returns (bool success) {
 
       // If transfer have value process it
-      if (_value > 0) {
-        balances[msg.sender] = safeSub(balances[msg.sender], _value);
-        balances[_to] = safeAdd(balances[_to], _value);
-        giveVotes(msg.sender, _to);
+      if (value > 0) {
+        balances[msg.sender] = safeSub(balances[msg.sender], value);
+        balances[to] = safeAdd(balances[to], value);
+        giveVotes(msg.sender, to);
       }
 
-      TransferData(msg.sender, _to, _value, _data);
+      TransferData(msg.sender, to, value, data);
 
     }
 
     // ERC20 transferFrom method but with data parameter.
-    function transferDataFrom(address _from, address _to, uint _value, string _data) onStatus(3,4) returns (bool success) {
+    function transferDataFrom(address from, address to, uint value, string data) onStatus(3,4) returns (bool success) {
 
       // If transfer have value process it
-      if (_value > 0) {
-        uint _allowance = allowed[_from][msg.sender];
-        balances[_from] = safeSub(balances[_from], _value);
-        balances[_to] = safeAdd(balances[_to], _value);
-        allowed[_from][msg.sender] = safeSub(_allowance, _value);
-        giveVotes(msg.sender, _to);
+      if (value > 0) {
+        uint allowance = allowed[from][msg.sender];
+        balances[from] = safeSub(balances[from], value);
+        balances[to] = safeAdd(balances[to], value);
+        allowed[from][msg.sender] = safeSub(allowance, value);
+        giveVotes(msg.sender, to);
       }
 
-      TransferData(msg.sender, _to, _value, _data);
+      TransferData(msg.sender, to, value, data);
 
       return true;
 
     }
 
     // Create a new proposal
-    function newProposal(address _target, uint _value, string _description, uint _agePerBlock, bytes4 _signature, bytes _actionData) payable {
+    function newProposal(address target, uint value, string description, uint agePerBlock, bytes4 signature, bytes actionData) payable {
 
       // Need to check status inside function because arguments stack is to deep to add modifier
       if ((status != 3) && (status != 4))
         throw;
 
       // Check that action is valid by target and signature
-      if (actionsDAO[_target][_signature] == 0)
+      if (actionsDAO[target][signature] == 0)
         throw;
 
       // Check sender necessary votes
@@ -509,16 +509,16 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
       // Get the needed votes % for action approval
       uint votesNeeded = divide(totalVotes, 100, 1);
-      votesNeeded = safeMul(votesNeeded, actionsDAO[_target][_signature]);
+      votesNeeded = safeMul(votesNeeded, actionsDAO[target][signature]);
       votesNeeded = divide(votesNeeded, 100, 1);
 
       // If DAOAction exists votesNeeded will be more than cero, proposal is created.
       if (votesNeeded > 0) {
         totalProposals ++;
         uint pos = proposals.length++;
-        uint _blocksWait = safeAdd(block.number, proposalBlocksWait);
+        uint blocksWait = safeAdd(block.number, proposalBlocksWait);
         uint senderVotes = getVotes(msg.sender);
-        proposals[pos] = Proposal(_target, totalProposals, _value, _description, 2, block.number, _blocksWait, _agePerBlock, votesNeeded, _actionData, senderVotes);
+        proposals[pos] = Proposal(target, totalProposals, value, description, 2, block.number, blocksWait, agePerBlock, votesNeeded, actionData, senderVotes);
         proposals[pos].votes[msg.sender] = 1;
         proposalAdded(totalProposals);
       }
@@ -526,10 +526,10 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     // Vote a contract proposal
-    function vote(uint _proposalID, bool _vote) onlyTokenHolder() onStatus(3,4) returns (bool) {
+    function vote(uint proposalID, bool vote) onlyTokenHolder() onStatus(3,4) returns (bool) {
 
       //Get the proposal by proposalID
-      Proposal p = proposals[_proposalID];
+      Proposal p = proposals[proposalID];
 
       // If user already voted throw error
       if (p.votes[msg.sender] > 0)
@@ -540,7 +540,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         throw;
 
       // Add user vote
-      if (_vote) {
+      if (vote) {
         p.votes[msg.sender] = 1;
         uint senderVotes = getVotes(msg.sender);
         p.totalVotes = safeAdd(p.totalVotes, senderVotes);
@@ -548,17 +548,17 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
         p.votes[msg.sender] = 2;
       }
 
-      VoteAdded(_proposalID);
+      VoteAdded(proposalID);
 
       return true;
 
     }
 
     // Execute a proporal, only the owner can make this call, the check of the votes is optional because it can ran out of gas.
-    function executeProposal(uint _proposalID) onlyTokenHolder() onStatus(4,0) returns (bool success) {
+    function executeProposal(uint proposalID) onlyTokenHolder() onStatus(4,0) returns (bool success) {
 
       // Get the proposal using proposalsIndex
-      Proposal p = proposals[_proposalID];
+      Proposal p = proposals[proposalID];
 
       // If proposal reach maxBlocksWait throw.
       if (p.maxBlock < block.number)
@@ -593,10 +593,10 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     // Remove a proposal if it passed the maxBlock number.
-    function removeProposal(uint _proposalID) onlyTokenHolder() onStatus(4,0) returns (bool success) {
+    function removeProposal(uint proposalID) onlyTokenHolder() onStatus(4,0) returns (bool success) {
 
       // Get the proposal using proposalsIndex
-      Proposal p = proposals[_proposalID];
+      Proposal p = proposals[proposalID];
 
       // If proposal didnt reach maxBlocksWait throw.
       if (p.maxBlock > block.number)
@@ -640,13 +640,13 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     //ERC20 token balanceOf method
-    function balanceOf(address _owner) constant returns (uint balance) {
-      return balances[_owner];
+    function balanceOf(address owner) constant returns (uint balance) {
+      return balances[owner];
     }
 
     //ERC20 token allowance method
-    function allowance(address _owner, address _spender) constant returns (uint remaining) {
-      return allowed[_owner][_spender];
+    function allowance(address owner, address spender) constant returns (uint remaining) {
+      return allowed[owner][spender];
     }
 
     // Get votes needed for a DAO action
@@ -673,7 +673,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       // Rounding of last digit
       uint _quotient = ((_numerator / denominator) + 5) / 10;
 
-      return ( _quotient);
+      return (_quotient);
 
     }
 
