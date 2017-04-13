@@ -1,5 +1,8 @@
-pragma solidity ^0.4.4;
-import './Ownable.sol';
+pragma solidity ^0.4.8;
+
+
+import '../ownership/Ownable.sol';
+
 
 contract Migrations is Ownable {
   uint public lastCompletedMigration;
