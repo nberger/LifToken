@@ -212,7 +212,7 @@ contract('LifToken', function(accounts) {
   function getStage(number) {
     return new Promise(function(resolve, reject) {
       token.crowdsaleStages.call(number).then(stageData => {
-        console.log('[Stage '+number+'] Blocks: '+parseInt(stageData[0])+' - '+parseInt(stageData[1]) +', Start Price: '+toEther(stageData[2])+', ChangePerBlock: '+parseInt(stageData[3])+'/'+toEther(stageData[4])+' ETH, MinCap: '+toEther(stageData[5]),', Total Tokens: '+parseInt(stageData[6]), ', Presale Discount: ',parseInt(stageData[7]), ', Presale ETH Raised: ',toEther(stageData[8]), ', Crowdsale Raised: ',toEther(stageData[9]), 'ETH, Tokens Sold: ',parseInt(stageData[10]), ', Final Price: ',toEther(stageData[11]), 'ETH, Status: ',parseInt(stageData[12]));
+        console.log('[Stage '+number+'] Blocks: '+parseInt(stageData[0])+' - '+parseInt(stageData[1]) +', Start Price: '+toEther(stageData[2])+', ChangePerBlock: '+parseInt(stageData[3])+'/'+toEther(stageData[4])+' ETH, MinCap: '+toEther(stageData[5])+' ETH, MaxCap: '+toEther(stageData[6])+' ETH, Total Tokens: '+parseInt(stageData[7])+', Presale Discount: '+parseInt(stageData[8])+', Presale ETH Raised: '+toEther(stageData[9])+', Crowdsale Raised: '+toEther(stageData[10])+'ETH, Tokens Sold: '+parseInt(stageData[1])+', Final Price: '+toEther(stageData[12])+'ETH, Status: '+parseInt(stageData[13]));
         resolve(stageData);
       }).catch(err => {
         reject(err);
@@ -223,7 +223,8 @@ contract('LifToken', function(accounts) {
   function simulateCrowdsale(_token, total, price, balances){
     var startBlock = web3.eth.blockNumber;
     var endBlock = web3.eth.blockNumber+5;
-    return _token.addCrowdsaleStage(startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), total*price, total, 40)
+    var targetBalance = parseFloat(total*price);
+    return _token.addCrowdsaleStage(startBlock, endBlock, price, 10, web3.toWei(0.1, 'ether'), 1, targetBalance, total, 40)
       .then(function(){
         if (balances[0] > 0)
           return _token.submitBid(accounts[1], balances[0], { value: balances[0]*price, from: accounts[1] });
@@ -258,7 +259,7 @@ contract('LifToken', function(accounts) {
       })
       .then(function([auctionEnded, tokenStatus]) {
         assert.equal(parseInt(tokenStatus), 4);
-        assert.equal(parseFloat(auctionEnded[12]), 3);
+        assert.equal(parseFloat(auctionEnded[13]), 3);
       })
       .then(function(){
         if (balances[0] > 0)
@@ -296,7 +297,7 @@ contract('LifToken', function(accounts) {
     var presaleTokens = 0;
     // Add crowdsale stage to sell 7M tokens using dutch auction and the future payments.
     Promise.all([
-      token.addCrowdsaleStage(startBlock, endBlock, web3.toWei(5, 'ether'), 10, web3.toWei(0.4, 'ether'), web3.toWei(10000000, 'ether'), 7000000, 40),
+      token.addCrowdsaleStage(startBlock, endBlock, web3.toWei(5, 'ether'), 10, web3.toWei(0.4, 'ether'), web3.toWei(10000000, 'ether'), web3.toWei(40000000, 'ether'), 7000000, 40),
       token.addFuturePayment(accounts[0], endBlock, 625000, web3.toHex("Founding Team first year retribution tokens")),
       token.addFuturePayment(accounts[0], endBlock+10, 625000, web3.toHex("Founding Team second year retribution tokens")),
       token.addFuturePayment(accounts[0], endBlock+20, 625000, web3.toHex("Founding Team third year retribution tokens")),
@@ -427,13 +428,14 @@ contract('LifToken', function(accounts) {
       assert.equal(parseFloat(auctionSuccess[3]), 10);
       assert.equal(parseFloat(auctionSuccess[4]), web3.toWei(0.4, 'ether'));
       assert.equal(parseFloat(auctionSuccess[5]), web3.toWei(10000000, 'ether'));
-      assert.equal(parseFloat(auctionSuccess[6]), 7000000);
-      assert.equal(parseFloat(auctionSuccess[7]), 40);
-      assert.equal(toEther(auctionSuccess[8]), 250000);
-      assert.equal(parseBalance(auctionSuccess[9]), parseBalance(totalWeiSent));
-      assert.equal(parseFloat(auctionSuccess[10]), totalTokensBought);
-      assert.equal(parseFloat(auctionSuccess[11]), lastPrice);
-      assert.equal(parseFloat(auctionSuccess[12]), 2);
+      assert.equal(parseFloat(auctionSuccess[6]), web3.toWei(40000000, 'ether'));
+      assert.equal(parseFloat(auctionSuccess[7]), 7000000);
+      assert.equal(parseFloat(auctionSuccess[8]), 40);
+      assert.equal(toEther(auctionSuccess[9]), 250000);
+      assert.equal(parseBalance(auctionSuccess[10]), parseBalance(totalWeiSent));
+      assert.equal(parseFloat(auctionSuccess[11]), totalTokensBought);
+      assert.equal(parseFloat(auctionSuccess[12]), lastPrice);
+      assert.equal(parseFloat(auctionSuccess[13]), 2);
       presaleTokens = toWei(250000)/(lastPrice*0.6);
       return token.status();
     })
@@ -457,13 +459,14 @@ contract('LifToken', function(accounts) {
       assert.equal(parseFloat(auctionEnded[3]), 10);
       assert.equal(parseFloat(auctionEnded[4]), web3.toWei(0.4, 'ether'));
       assert.equal(parseFloat(auctionEnded[5]), web3.toWei(10000000, 'ether'));
-      assert.equal(parseFloat(auctionEnded[6]), 7000000);
-      assert.equal(parseFloat(auctionEnded[7]), 40);
-      assert.equal(toEther(auctionEnded[8]), 250000);
-      assert.equal(parseBalance(auctionEnded[9]), parseBalance(totalWeiSent));
-      assert.equal(parseFloat(auctionEnded[10]), totalTokensBought);
-      assert.equal(parseFloat(auctionEnded[11]), lastPrice);
-      assert.equal(parseFloat(auctionEnded[12]), 3);
+      assert.equal(parseFloat(auctionEnded[6]), web3.toWei(40000000, 'ether'));
+      assert.equal(parseFloat(auctionEnded[7]), 7000000);
+      assert.equal(parseFloat(auctionEnded[8]), 40);
+      assert.equal(toEther(auctionEnded[9]), 250000);
+      assert.equal(parseBalance(auctionEnded[10]), parseBalance(totalWeiSent));
+      assert.equal(parseFloat(auctionEnded[11]), totalTokensBought);
+      assert.equal(parseFloat(auctionEnded[12]), lastPrice);
+      assert.equal(parseFloat(auctionEnded[13]), 3);
       return Promise.all([
         token.claimTokens(0, {from: accounts[1]}),
         token.claimTokens(0, {from: accounts[2]}),

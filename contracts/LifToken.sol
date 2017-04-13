@@ -103,6 +103,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       uint changePerBlock;
       uint changePrice;
       uint minCap;
+      uint maxCap;
       uint totalTokens;
       uint presaleDiscount;
       uint totalPresaleWei;
@@ -196,18 +197,18 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     // Add a crowdsale stage
-    function addCrowdsaleStage(uint startBlock, uint endBlock, uint startPrice, uint changePerBlock, uint changePrice, uint minCap, uint totalTokens, uint presaleDiscount) external {
+    function addCrowdsaleStage(uint startBlock, uint endBlock, uint startPrice, uint changePerBlock, uint changePrice, uint minCap, uint maxCap, uint totalTokens, uint presaleDiscount) external onlyOwner() {
 
       if ((msg.sender != address(this)) && (msg.sender != owner))
         throw;
 
-      crowdsaleStages.push(CrowdsaleStage(startBlock, endBlock, startPrice, changePerBlock, changePrice, minCap, totalTokens, presaleDiscount, 0, 0, 0, 0, 0));
+      crowdsaleStages.push(CrowdsaleStage(startBlock, endBlock, startPrice, changePerBlock, changePrice, minCap, maxCap, totalTokens, presaleDiscount, 0, 0, 0, 0, 0));
       maxSupply = safeAdd(maxSupply, totalTokens);
 
     }
 
     // Change a crowdsale stage status before it begins
-    function editCrowdsaleStage(uint stage, uint _startBlock, uint _endBlock, uint _startPrice, uint _changePerBlock, uint _changePrice, uint _minCap, uint _totalTokens) external onlyOwner() {
+    function editCrowdsaleStage(uint stage, uint _startBlock, uint _endBlock, uint _startPrice, uint _changePerBlock, uint _changePrice, uint _minCap, uint _maxCap, uint _totalTokens) external onlyOwner() {
 
       if ((crowdsaleStages[stage].status == 1) || (crowdsaleStages[stage].status == 2))
         throw;
@@ -218,6 +219,7 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
       crowdsaleStages[stage].changePerBlock = _changePerBlock;
       crowdsaleStages[stage].changePrice = _changePrice;
       crowdsaleStages[stage].minCap = _minCap;
+      crowdsaleStages[stage].maxCap = _maxCap;
       maxSupply = safeSub(maxSupply, crowdsaleStages[stage].totalTokens);
       maxSupply = safeAdd(maxSupply, _totalTokens);
       crowdsaleStages[stage].totalTokens = _totalTokens;
@@ -225,25 +227,25 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
     }
 
     // See if the status of a crowdsale stage and the token status can be changed
-    function checkCrowdsaleStage(uint stage) external {
+    function checkCrowdsaleStage(uint stage) external onlyOwner() {
 
-      bool onCrowdsale = false;
-
-      if ((crowdsaleStages[stage].startBlock <= block.number) && (block.number <= crowdsaleStages[stage].endBlock))
+      if ((crowdsaleStages[stage].startBlock <= block.number) && (block.number <= crowdsaleStages[stage].endBlock) && (crowdsaleStages[stage].weiRaised < crowdsaleStages[stage].minCap)){
+        crowdsaleStages[stage].status = 1;
+      } else if ((crowdsaleStages[stage].startBlock <= block.number) && (block.number <= crowdsaleStages[stage].endBlock) && (crowdsaleStages[stage].weiRaised > crowdsaleStages[stage].minCap)) {
         crowdsaleStages[stage].status = 2;
-      else if ((crowdsaleStages[stage].weiRaised > crowdsaleStages[stage].minCap) && (block.number > crowdsaleStages[stage].endBlock))
+      } else if ((crowdsaleStages[stage].weiRaised >= crowdsaleStages[stage].minCap) && (block.number > crowdsaleStages[stage].endBlock)) {
         crowdsaleStages[stage].status = 3;
-      else if ((crowdsaleStages[stage].weiRaised < crowdsaleStages[stage].minCap) && (block.number > crowdsaleStages[stage].endBlock))
+        maxSupply = safeSub(maxSupply, safeSub(crowdsaleStages[stage].totalTokens, crowdsaleStages[stage].tokensSold));
+      } else if ((crowdsaleStages[stage].weiRaised <= crowdsaleStages[stage].minCap) && (block.number > crowdsaleStages[stage].endBlock)) {
         crowdsaleStages[stage].status = 4;
+        maxSupply = safeSub(maxSupply, crowdsaleStages[stage].totalTokens);
+      }
 
+      status = 4;
       //Also check if the token status is on crowdsale
       for (uint i = 0; i < crowdsaleStages.length; i ++)
-        if ((crowdsaleStages[i].startBlock <= block.number) && (block.number <= crowdsaleStages[i].endBlock))
-          onCrowdsale = true;
-      if (!onCrowdsale)
-        status = 4;
-      else
-        status = 3;
+        if ((crowdsaleStages[i].startBlock <= block.number) && (block.number <= crowdsaleStages[i].endBlock) && (status != 3))
+          status = 3;
 
     }
 
@@ -358,15 +360,17 @@ contract LifToken is Ownable, ERC20, SafeMath, PullPayment {
 
           if (msg.value < weiCost) {
             break;
-          } else {
+          } else if (safeAdd(crowdsaleStages[i].weiRaised, weiCost) <= crowdsaleStages[i].maxCap){
 
             if (crowdsaleStages[i].status == 0){
               crowdsaleStages[i].status = 1;
               status = 3;
-            } else if (((crowdsaleStages[i].status == 1) || (crowdsaleStages[i].status == 2)) && (safeAdd(crowdsaleStages[i].tokensSold,presaleTokens) == crowdsaleStages[i].totalTokens)){
+            } else if (((crowdsaleStages[i].status == 1) || (crowdsaleStages[i].status == 2)) && (safeAdd(crowdsaleStages[i].tokensSold, presaleTokens) == crowdsaleStages[i].totalTokens)){
+              maxSupply = safeSub(maxSupply, crowdsaleStages[i].totalTokens);
+              maxSupply = safeAdd(maxSupply, crowdsaleStages[i].tokensSold);
               crowdsaleStages[i].status = 3;
               status = 4;
-            } else if ((crowdsaleStages[i].status == 1) && (safeAdd(crowdsaleStages[i].weiRaised, weiCost) > crowdsaleStages[i].minCap)){
+            } else if ((crowdsaleStages[i].status == 1) && (safeAdd(crowdsaleStages[i].weiRaised, weiCost) >= crowdsaleStages[i].minCap)){
               crowdsaleStages[i].status = 2;
               status = 3;
             }
