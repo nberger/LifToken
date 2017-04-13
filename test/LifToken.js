@@ -606,12 +606,10 @@ contract('LifToken', function(accounts) {
         if (DEBUG_MODE) console.log('Data parsed:',dataParsed);
         return token.transferData(accounts[2], formatBalance(1000), dataParsed, {from: accounts[1]});
       })
-      .then(function() {
-        eventsWatcher.get(function(error, log){
-          var decodedObj = JSON.parse(log[0].args.data.hexDecode());
-          assert.equal("AwesomeString", decodedObj.awesomeField);
-          return chekValues(1000000, 10000000, 0, [3999000,3001000,2000000,1000000,0]);
-        });
+      .then(function(transaction) {
+        var decodedObj = JSON.parse(transaction.logs[0].args.data.hexDecode());
+        assert.equal("AwesomeString", decodedObj.awesomeField);
+        return chekValues(1000000, 10000000, 0, [3999000,3001000,2000000,1000000,0]);
       }).then(function(){
         done();
       });
@@ -630,13 +628,10 @@ contract('LifToken', function(accounts) {
         encodedHex = encodedBuffer.toString().hexEncode();
         return token.transferData(accounts[2], 0, encodedHex, {from: accounts[1]});
       })
-      .then(function() {
-        eventsWatcher.get(function(error, log){
-          assert.equal(error, null);
-          var decodedBuffer = new Buffer(log[0].args.data.toString().hexDecode());
-          assert.equal("AwesomeString", AwesomeMessage.decode(decodedBuffer).awesomeField);
-          return chekValues(1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
-        });
+      .then(function(transaction) {
+        var decodedBuffer = new Buffer(transaction.logs[0].args.data.toString().hexDecode());
+        assert.equal("AwesomeString", AwesomeMessage.decode(decodedBuffer).awesomeField);
+        return chekValues(1000000, 10000000, 0, [4000000,3000000,2000000,1000000,0]);
       }).then(function(){
         done();
       });
