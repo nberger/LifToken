@@ -5,11 +5,11 @@ Líf is the token of the Winding Tree platform.
 Líf is based on the ERC20 token protocol, with the option to also send information between token holders uint new methods transferData and transferDataFrom.
 Líf is also a DAO, the token holders can create proposals to change token variables and send value/data to another contracts.
 
+[![Build Status](https://travis-ci.org/windingtree/LifToken.svg?branch=master)](https://travis-ci.org/windingtree/LifToken)
+
 ## Install
 
 ```sh
-npm install ethereumjs-testrpc -g
-npm install truffle -g
 npm install
 ```
 
