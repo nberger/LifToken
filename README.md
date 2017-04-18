@@ -95,6 +95,4 @@ vote(uint _proposalID, bool _vote)
 
 ## Test
 
-To test the token first run `npm run testrpc` and this will create a testnet locally with accounts with a lot of balance.
-
-After testrpc starts run `npm test`.
+Run `npm test`
