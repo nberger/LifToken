@@ -7,6 +7,10 @@ Líf is also a DAO, the token holders can create proposals to change token varia
 
 [![Build Status](https://travis-ci.org/windingtree/LifToken.svg?branch=master)](https://travis-ci.org/windingtree/LifToken)
 
+## Requirements
+
+Node v7
+
 ## Install
 
 ```sh
