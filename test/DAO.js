@@ -6,7 +6,7 @@ var help = require("./helpers");
 var LifToken = artifacts.require("./LifToken.sol");
 var Message = artifacts.require("./Message.sol");
 
-const LOG_EVENTS = true;
+const LOG_EVENTS = false;
 
 contract('LifToken DAO', function(accounts) {
 
@@ -30,23 +30,23 @@ contract('LifToken DAO', function(accounts) {
   it("Should add the min votes needed for native contract actions", async function() {
     var signature = token.contract.setBaseProposalFee.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setBaseProposalFee(uint256) signature', signature);
-    await token.buildMinVotes(token.contract.address, 86, signature, {from: accounts[0]})
+    await token.addDAOAction(token.contract.address, 86, signature, {from: accounts[0]});
 
     signature = token.contract.setProposalBlocksWait.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setProposalBlocksWait(uint256) signature', signature);
-    await token.buildMinVotes(token.contract.address, 87, signature, {from: accounts[0]});
+    await token.addDAOAction(token.contract.address, 87, signature, {from: accounts[0]});
 
     signature = token.contract.addDAOAction.getData(0x0, 0x0, 0x0).toString('hex').substring(0,10);
     console.log('Action addDAOAction(address,uint,bytes4) signature', signature);
-    await token.buildMinVotes(token.contract.address, 88, signature, {from: accounts[0]});
+    await token.addDAOAction(token.contract.address, 88, signature, {from: accounts[0]});
 
     signature = token.contract.sendEther.getData(0x0, 0x0).toString('hex').substring(0,10);
     console.log('Action sendEther(address,uint) signature', signature);
-    await token.buildMinVotes(token.contract.address, 89, signature, {from: accounts[0]});
+    await token.addDAOAction(token.contract.address, 89, signature, {from: accounts[0]});
 
     signature = token.contract.setStatus.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setStatus(uint) signature', signature);
-    await token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]});
+    await token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]});
 
     let actions = await Promise.all([
       token.getActionDAO(token.contract.address, token.contract.setBaseProposalFee.getData(0x0).toString('hex').substring(0,10)),
@@ -55,18 +55,18 @@ contract('LifToken DAO', function(accounts) {
       token.getActionDAO(token.contract.address, token.contract.sendEther.getData(0x0).toString('hex').substring(0,10)),
       token.getActionDAO(token.contract.address, token.contract.setStatus.getData(0x0).toString('hex').substring(0,10))
     ]);
-    assert.equal(actions[0], 86);
-    assert.equal(actions[1], 87);
-    assert.equal(actions[2], 88);
-    assert.equal(actions[3], 89);
-    assert.equal(actions[4], 90);
+    assert.equal(parseInt(actions[0]), 86);
+    assert.equal(parseInt(actions[1]), 87);
+    assert.equal(parseInt(actions[2]), 88);
+    assert.equal(parseInt(actions[3]), 89);
+    assert.equal(parseInt(actions[4]), 90);
   });
 
   it("Should add a setMinProposalVotes proposal, be voted by another user, check it and get executed.", async function() {
     var signature, data;
     signature = token.contract.setMinProposalVotes.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setMinProposalVotes(uint256) signature', signature);
-    await token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]})
+    await token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]})
     await  help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
 
     var transfers = [];
@@ -100,7 +100,7 @@ contract('LifToken DAO', function(accounts) {
     var signature, data;
     signature = token.contract.setBaseProposalFee.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setBaseProposalFee(uint256) signature', signature);
-    await token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]})
+    await token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]})
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
 
     var transfers = [];
@@ -145,7 +145,7 @@ contract('LifToken DAO', function(accounts) {
     var signature, data;
     signature = token.contract.setProposalBlocksWait.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setProposalBlocksWait(uint256) signature', signature);
-    await token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]})
+    await token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]})
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
 
     var transfers = [];
@@ -183,7 +183,7 @@ contract('LifToken DAO', function(accounts) {
     var signature, data;
     signature = token.contract.sendEther.getData(0x0,0x0).toString('hex').substring(0,10);
     console.log('Action sendEther(address,uint256) signature', signature);
-    await token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]})
+    await token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]})
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
 
     var transfers = [];
@@ -207,7 +207,7 @@ contract('LifToken DAO', function(accounts) {
     let message = await Message.new()
     signature = message.contract.showMessage.getData(0x0, 0x0, 0x0).toString('hex').substring(0,10);
     console.log('Action showMessage(bytes32,uint256,string) signature', signature);
-    await  token.buildMinVotes(message.contract.address, 90, signature, {from: accounts[0]});
+    await  token.addDAOAction(message.contract.address, 90, signature, {from: accounts[0]});
     await help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
 
     var transfers = [];
