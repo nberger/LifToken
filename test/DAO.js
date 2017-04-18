@@ -6,7 +6,7 @@ var help = require("./helpers");
 var LifToken = artifacts.require("./LifToken.sol");
 var Message = artifacts.require("./Message.sol");
 
-const LOG_EVENTS = true;
+const LOG_EVENTS = false;
 
 contract('LifToken DAO', function(accounts) {
 
@@ -34,26 +34,26 @@ contract('LifToken DAO', function(accounts) {
   it("Should add the min votes needed for native contract actions", function(done) {
     var signature = token.contract.setBaseProposalFee.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setBaseProposalFee(uint256) signature', signature);
-    token.buildMinVotes(token.contract.address, 86, signature, {from: accounts[0]})
+    token.addDAOAction(token.contract.address, 86, signature, {from: accounts[0]})
       .then(function() {
         signature = token.contract.setProposalBlocksWait.getData(0x0).toString('hex').substring(0,10);
         console.log('Action setProposalBlocksWait(uint256) signature', signature);
-        return token.buildMinVotes(token.contract.address, 87, signature, {from: accounts[0]});
+        return token.addDAOAction(token.contract.address, 87, signature, {from: accounts[0]});
       })
       .then(function() {
         signature = token.contract.addDAOAction.getData(0x0, 0x0, 0x0).toString('hex').substring(0,10);
         console.log('Action addDAOAction(address,uint,bytes4) signature', signature);
-        return token.buildMinVotes(token.contract.address, 88, signature, {from: accounts[0]});
+        return token.addDAOAction(token.contract.address, 88, signature, {from: accounts[0]});
       })
       .then(function() {
         signature = token.contract.sendEther.getData(0x0, 0x0).toString('hex').substring(0,10);
         console.log('Action sendEther(address,uint) signature', signature);
-        return token.buildMinVotes(token.contract.address, 89, signature, {from: accounts[0]});
+        return token.addDAOAction(token.contract.address, 89, signature, {from: accounts[0]});
       })
       .then(function() {
         signature = token.contract.setStatus.getData(0x0).toString('hex').substring(0,10);
         console.log('Action setStatus(uint) signature', signature);
-        return token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]});
+        return token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]});
       })
       .then(function() {
         return Promise.all([
@@ -65,11 +65,11 @@ contract('LifToken DAO', function(accounts) {
         ]);
       })
       .then(function(actions){
-        assert.equal(actions[0], 86);
-        assert.equal(actions[1], 87);
-        assert.equal(actions[2], 88);
-        assert.equal(actions[3], 89);
-        assert.equal(actions[4], 90);
+        assert.equal(parseInt(actions[0]), 86);
+        assert.equal(parseInt(actions[1]), 87);
+        assert.equal(parseInt(actions[2]), 88);
+        assert.equal(parseInt(actions[3]), 89);
+        assert.equal(parseInt(actions[4]), 90);
         done();
       });
   });
@@ -78,7 +78,7 @@ contract('LifToken DAO', function(accounts) {
     var signature, data;
     signature = token.contract.setMinProposalVotes.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setMinProposalVotes(uint256) signature', signature);
-    token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]})
+    token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]})
       .then(function() {
         return help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
       })
@@ -129,7 +129,7 @@ contract('LifToken DAO', function(accounts) {
     var signature, data;
     signature = token.contract.setBaseProposalFee.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setBaseProposalFee(uint256) signature', signature);
-    token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]})
+    token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]})
       .then(function() {
         return help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
       })
@@ -197,7 +197,7 @@ contract('LifToken DAO', function(accounts) {
     var signature, data;
     signature = token.contract.setProposalBlocksWait.getData(0x0).toString('hex').substring(0,10);
     console.log('Action setProposalBlocksWait(uint256) signature', signature);
-    token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]})
+    token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]})
       .then(function() {
         return help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
       })
@@ -258,7 +258,7 @@ contract('LifToken DAO', function(accounts) {
     var signature, data;
     signature = token.contract.sendEther.getData(0x0,0x0).toString('hex').substring(0,10);
     console.log('Action sendEther(address,uint256) signature', signature);
-    token.buildMinVotes(token.contract.address, 90, signature, {from: accounts[0]})
+    token.addDAOAction(token.contract.address, 90, signature, {from: accounts[0]})
       .then(function() {
         return help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);
       })
@@ -297,7 +297,7 @@ contract('LifToken DAO', function(accounts) {
         message = _message;
         signature = message.contract.showMessage.getData(0x0, 0x0, 0x0).toString('hex').substring(0,10);
         console.log('Action showMessage(bytes32,uint256,string) signature', signature);
-        return token.buildMinVotes(message.contract.address, 90, signature, {from: accounts[0]});
+        return token.addDAOAction(message.contract.address, 90, signature, {from: accounts[0]});
       })
       .then(function() {
         return help.simulateCrowdsale(token, 10000000, web3.toWei(0.1, 'ether'), [4000000,3000000,2000000,1000000,0], accounts);

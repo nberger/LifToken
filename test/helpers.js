@@ -3,7 +3,7 @@ var LifToken = artifacts.require("./LifToken.sol");
 var Message = artifacts.require("./Message.sol");
 
 const TOKEN_DECIMALS = 8;
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 module.exports = {
 
@@ -190,7 +190,7 @@ module.exports = {
     var self = this;
     return new Promise(function(resolve, reject) {
       token.crowdsaleStages.call(number).then(stageData => {
-        console.log('[Stage '+number+'] Blocks: '+parseInt(stageData[0])+' - '+parseInt(stageData[1]) +', Start Price: '+self.toEther(stageData[2])+', ChangePerBlock: '+parseInt(stageData[3])+'/'+self.toEther(stageData[4])+' ETH, MinCap: '+self.toEther(stageData[5])+' ETH, MaxCap: '+self.toEther(stageData[6])+' ETH, Total Tokens: '+parseInt(stageData[7])+', Presale Discount: '+parseInt(stageData[8])+', Presale ETH Raised: '+self.toEther(stageData[9])+', Crowdsale Raised: '+self.toEther(stageData[10])+'ETH, Tokens Sold: '+parseInt(stageData[1])+', Final Price: '+self.toEther(stageData[12])+'ETH, Status: '+parseInt(stageData[13]));
+        console.log('[Stage '+number+'] Blocks: '+parseInt(stageData[0])+' - '+parseInt(stageData[1]) +', Start Price: '+self.toEther(stageData[2])+', ChangePerBlock: '+parseInt(stageData[3])+'/'+self.toEther(stageData[4])+' ETH, MinCap: '+self.toEther(stageData[5])+' ETH, MaxCap: '+self.toEther(stageData[6])+' ETH, Total Tokens: '+parseInt(stageData[7])+', Presale Discount: '+parseInt(stageData[8])+', Presale ETH Raised: '+self.toEther(stageData[9])+', Crowdsale Raised: '+self.toEther(stageData[10])+'ETH, Tokens Sold: '+parseInt(stageData[11])+', Final Price: '+self.toEther(stageData[12])+'ETH, Status: '+parseInt(stageData[13]));
         resolve(stageData);
       }).catch(err => {
         reject(err);
@@ -242,23 +242,23 @@ module.exports = {
       })
       .then(function(){
         if (balances[0] > 0)
-          return token.claimTokens(0, { from: accounts[1] });
+          return token.distributeTokens(0, accounts[1], false, { from: accounts[0] });
       })
       .then(function(){
         if (balances[1] > 0)
-          return token.claimTokens(0, { from: accounts[2] });
+          return token.distributeTokens(0, accounts[2], false, { from: accounts[0] });
       })
       .then(function(){
         if (balances[2] > 0)
-          return token.claimTokens(0, { from: accounts[3] });
+          return token.distributeTokens(0, accounts[3], false, { from: accounts[0] });
       })
       .then(function(){
         if (balances[3] > 0)
-          return token.claimTokens(0, { from: accounts[4] });
+          return token.distributeTokens(0, accounts[4], false, { from: accounts[0] });
       })
       .then(function(){
         if (balances[4] > 0)
-          return token.claimTokens(0, { from: accounts[5] });
+          return token.distributeTokens(0, accounts[5], false, { from: accounts[0] });
       });
   }
 };
