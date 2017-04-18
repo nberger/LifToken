@@ -9,7 +9,7 @@ Líf is also a DAO, the token holders can create proposals to change token varia
 
 ## Requirements
 
-Node v7
+Node v7.6 or higher (versions before 7.6 do not support async/await)
 
 ## Install
 
