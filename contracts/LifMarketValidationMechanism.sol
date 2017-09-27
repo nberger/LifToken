@@ -156,6 +156,8 @@ contract LifMarketValidationMechanism is Ownable {
     }
   }
 
+  event Log(uint256 value, uint256 value2, uint256 value3);
+
   /**
      @dev Returns the current period as a number from 0 to totalPeriods
 
@@ -163,6 +165,7 @@ contract LifMarketValidationMechanism is Ownable {
     */
   function getCurrentPeriodIndex() constant public returns(uint256) {
     assert(block.timestamp >= startTimestamp);
+    Log(block.timestamp, startTimestamp, totalPausedSeconds);
     return block.timestamp.sub(startTimestamp).
       sub(totalPausedSeconds).
       div(secondsPerPeriod);
