@@ -650,7 +650,7 @@ contract('LifCrowdsale Property-based test', function() {
     });
   });
 
-  it('distributes tokens correctly on any combination of bids', async function() {
+  it.only('distributes tokens correctly on any combination of bids', async function() {
     // stateful prob based tests can take a long time to finish when shrinking...
     this.timeout(GEN_TESTS_TIMEOUT * 1000);
 

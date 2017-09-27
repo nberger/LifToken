@@ -798,25 +798,8 @@ async function runMVMPauseCommand(command, state) {
 
 const commands = {
   waitTime: {gen: gen.waitTimeCommandGen, run: runWaitTimeCommand},
-  checkRate: {gen: gen.checkRateCommandGen, run: runCheckRateCommand},
-  sendTransaction: {gen: gen.sendTransactionCommandGen, run: runSendTransactionCommand},
-  setWeiPerUSDinTGE: {gen: gen.setWeiPerUSDinTGECommandGen, run: runSetWeiPerUSDinTGECommand},
-  buyTokens: {gen: gen.buyTokensCommandGen, run: runBuyTokensCommand},
-  burnTokens: {gen: gen.burnTokensCommandGen, run: runBurnTokensCommand},
-  pauseCrowdsale: {gen: gen.pauseCrowdsaleCommandGen, run: runPauseCrowdsaleCommand},
-  pauseToken: {gen: gen.pauseTokenCommandGen, run: runPauseTokenCommand},
-  finalizeCrowdsale: {gen: gen.finalizeCrowdsaleCommandGen, run: runFinalizeCrowdsaleCommand},
-  addPrivatePresalePayment: {gen: gen.addPrivatePresalePaymentCommandGen, run: runAddPrivatePresalePaymentCommand},
-  claimEth: {gen: gen.claimEthCommandGen, run: runClaimEthCommand},
-  transfer: {gen: gen.transferCommandGen, run: runTransferCommand},
-  approve: {gen: gen.approveCommandGen, run: runApproveCommand},
-  transferFrom: {gen: gen.transferFromCommandGen, run: runTransferFromCommand},
   MVMSendTokens: {gen: gen.MVMSendTokensCommandGen, run: runMVMSendTokensCommand},
-  MVMClaimEth: {gen: gen.MVMClaimEthCommandGen, run: runMVMClaimEthCommand},
   MVMWaitForMonth: {gen: gen.MVMWaitForMonthCommandGen, run: runMVMWaitForMonthCommand},
-  MVMPause: {gen: gen.MVMPauseCommandGen, run: runMVMPauseCommand},
-  fundCrowdsaleBelowMinCap: {gen: gen.fundCrowdsaleBelowMinCap, run: runFundCrowdsaleBelowMinCap},
-  fundCrowdsaleBelowSoftCap: {gen: gen.fundCrowdsaleBelowSoftCap, run: runFundCrowdsaleBelowSoftCap},
   fundCrowdsaleOverSoftCap: {gen: gen.fundCrowdsaleOverSoftCap, run: runFundCrowdsaleOverSoftCap}
 };
 
