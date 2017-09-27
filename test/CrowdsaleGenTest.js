@@ -73,7 +73,9 @@ contract('LifCrowdsale Property-based test', function() {
       state.MVMPausedSeconds.should.be.bignumber.equal(await state.MVM.totalPausedSeconds.call());
       state.MVMClaimedWei.should.be.bignumber.equal(await state.MVM.totalWeiClaimed.call());
       if ((latestTime() >= state.MVMStartTimestamp) && !inCoverage) {
-        assert.equal(state.MVMMonth, parseInt(await state.MVM.getCurrentPeriodIndex()));
+        assert.equal(state.MVMMonth, parseInt(await state.MVM.getCurrentPeriodIndex()),
+          'it calculated the correct MVM Month. latestTime/startTimeStamp/pausedSeconds: ' +
+          latestTime() + ' / ' + state.MVMStartTimestamp + ' / ' + state.MVMPausedSeconds);
       }
     } else {
       state.MVMBurnedTokens.should.be.bignumber.equal(0);
